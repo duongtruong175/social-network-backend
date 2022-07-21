@@ -2,7 +2,10 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -34,6 +37,42 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
+        // not login
+        $this->renderable(function (AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                $res = [
+                    'code' => 401,
+                    'errors' => 'Unauthorized' . ' : ' . $e->getMessage(),
+                    'message' => "Không được phép truy cập"
+                ];
+                return response()->json($res, 401);
+            }
+        });
+
+        // save(), delete()
+        $this->renderable(function (QueryException $e, $request) {
+            if ($request->is('api/*')) {
+                $res = [
+                    'code' => 400,
+                    'errors' => 'Truy xuất dữ liệu thất bại' . ' : ' . $e->getMessage(),
+                    'message' => "Thất bại"
+                ];
+                return response()->json($res, 400);
+            }
+        });
+
+        // findOrFail() firstOrFail()
+        $this->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                $res = [
+                    'code' => 404,
+                    'errors' => 'Tài nguyên không tồn tại' . ' : ' . $e->getMessage(),
+                    'message' => "Thất bại"
+                ];
+                return response()->json($res, 404);
+            }
+        });
+
         $this->reportable(function (Throwable $e) {
             //
         });
